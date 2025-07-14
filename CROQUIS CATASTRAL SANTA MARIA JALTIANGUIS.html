@@ -172,20 +172,23 @@ window.addEventListener('load', () => {
 
     const valoresUnicos = campo => [...new Set(features.map(f => f.get(campo)).filter(Boolean))];
 
-    llenarSelect("filtroRadica", valoresUnicos("RADICA EL"), val => {
-        valorRadica = val;
-        aplicarFiltro();
-    }, true);
-
     llenarSelect("filtroNombrel", valoresUnicos("NOMBRE DEL"), val => {
-        valorNombrel = val;
-        aplicarFiltro();
-    }, true);
+    valorNombrel = val;
+    aplicarFiltro();
 
-    llenarSelect("filtroServicios", valoresUnicos("SERVICIOS"), val => {
-        valorServicios = val;
-        aplicarFiltro();
-    }, true);
+    if (val !== "todos") {
+        const feature = capa.getSource().getFeatures().find(f => normalizar(f.get("NOMBRE DEL")) === val);
+        if (feature) {
+            const geometry = feature.getGeometry();
+            const extent = geometry.getExtent();
+            map.getView().fit(extent, {
+                duration: 800,
+                padding: [50, 50, 50, 50],
+                maxZoom: 19
+            });
+        }
+    }
+}, true);
 
     // Búsqueda rápida por nombre
     document.getElementById("busquedaNombre").addEventListener("input", function () {
