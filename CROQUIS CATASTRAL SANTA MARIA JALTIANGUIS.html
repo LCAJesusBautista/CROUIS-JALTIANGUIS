@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+    <head>
+<style>
+  select, input[type="text"] {
+    border: 1px solid #ccc;
+    padding: 5px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  label {
+    color: #003366;
+  }
+</style>
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="./resources/ol.css">
+        <link rel="stylesheet" href="resources/fontawesome-all.min.css">
+        <link rel="stylesheet" type="text/css" href="resources/horsey.min.css">
+        <link rel="stylesheet" type="text/css" href="resources/ol3-search-layer.min.css">
+        <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
+        <link rel="stylesheet" href="./resources/qgis2web.css">
+        <style>
+        html, body {
+            background-color: #ffffff;
+        }
+        .ol-control > * {
+            background-color: #f8f8f8!important;
+            color: #006dff!important;
+            border-radius: 0px;
+        }
+        .ol-attribution a, .gcd-gl-input::placeholder, .search-layer-input-search::placeholder {
+            color: #006dff!important;
+        }
+        .search-layer-input-search {
+            background-color: #f8f8f8!important;
+        }
+        .ol-control > *:focus, .ol-control >*:hover {
+            background-color: rgba(248, 248, 248, 0.7)!important;
+        } 
+        .ol-control {
+            background-color: rgba(255,255,255,.4) !important;
+            padding: 2px !important;
+        } 
+        </style>
+
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>CROQUIS CATASTRAL DE SANTA MARÍA JALTIANGUIS</title>
+    </head>
+    <body>
+<div id="logoJaltianguis" style="
+    position: absolute;
+    top: 10px;
+    LEFT: 50px;
+    z-index: 1001;
+">
+  <img src="images/logo-jaltianguis.png" alt="Logo Jaltianguis" style="height: 100px; opacity: 0.95;">
+</div>
+
+<div style="position: absolute; bottom: 10px; left: 10px; z-index: 1000; font-family: sans-serif; font-size: 12px;">
+  <button onclick="toggleFiltros()" style="
+      padding: 4px 8px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      border: 1px solid #aaa;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      cursor: pointer;
+  " id="toggleBtn">Ocultar filtros</button>
+
+  <div id="filtros" style="
+      background: rgba(255,255,255,0.95);
+      padding: 6px;
+      border: 1px solid #aaa;
+      max-width: 200px;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+      font-size: 12px;
+      color: #000;
+      line-height: 1.3;
+  ">
+    <label for="filtroRadica"><strong>RESIDENCIA DEL PROPIETARIO</strong></label><br>
+    <select id="filtroRadica" style="width: 100%; margin-bottom: 6px;"></select>
+
+    <label for="filtroNombrel"><strong>NOMBRE DEL PROPIETARIO</strong></label><br>
+    <input type="text" id="busquedaNombre" placeholder="Buscar..." style="width: 100%; margin: 4px 0; padding: 3px;">
+    <select id="filtroNombrel" size="5" style="width: 100%; margin-bottom: 6px;"></select>
+
+    <label for="filtroServicios"><strong>SERVICIOS</strong></label><br>
+    <select id="filtroServicios" style="width: 100%;"></select>
+  </div>
+</div>
+
+
+        <div id="map">
+            <div id="popup" class="ol-popup">
+                <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+                <div id="popup-content"></div>
+            </div>
+        </div>
+        <script src="resources/qgis2web_expressions.js"></script>
+        <script src="./resources/functions.js"></script>
+        <script src="./resources/ol.js"></script>
+        <script src="resources/horsey.min.js"></script>
+        <script src="resources/ol3-search-layer.js"></script>
+        <script src="./resources/ol-layerswitcher.js"></script>
+        <script src="layers/Zona_urbana_1.js"></script><script src="layers/PREDIOSWEB_2.js"></script>
+        <script src="styles/Zona_urbana_1_style.js"></script><script src="styles/PREDIOSWEB_2_style.js"></script>
+        <script src="./layers/layers.js" type="text/javascript"></script> 
+        <script src="./resources/Autolinker.min.js"></script>
+        <script src="./resources/qgis2web.js"></script>
+<script>
+const normalizar = txt => txt ? txt.toString().toLowerCase().trim() : "";
+
+let valorRadica = "todos";
+let valorNombrel = "todos";
+let valorServicios = "todos";
+
+function aplicarFiltro() {
+    const capa = window.lyr_PREDIOSWEB_2;
+    capa.getSource().getFeatures().forEach(feature => {
+        const r = normalizar(feature.get("RADICA EL"));
+        const n = normalizar(feature.get("NOMBRE DEL"));
+        const s = normalizar(feature.get("SERVICIOS"));
+
+        const visible =
+            (valorRadica === "todos" || r === valorRadica) &&
+            (valorNombrel === "todos" || n === valorNombrel) &&
+            (valorServicios === "todos" || s === valorServicios);
+
+        feature.setStyle(visible ? null : new ol.style.Style({}));
+    });
+}
+
+function llenarSelect(id, valores, callback, ordenar = false) {
+    const select = document.getElementById(id);
+    select.innerHTML = "";
+
+    const opcionTodos = document.createElement("option");
+    opcionTodos.value = "todos";
+    opcionTodos.textContent = "Todos";
+    select.appendChild(opcionTodos);
+
+    if (ordenar) {
+        valores.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    }
+
+    valores.forEach(valor => {
+        const opt = document.createElement("option");
+        opt.value = normalizar(valor);
+        opt.textContent = valor;
+        select.appendChild(opt);
+    });
+
+    select.onchange = () => callback(select.value);
+}
+
+window.addEventListener('load', () => {
+    const capa = window.lyr_PREDIOSWEB_2;
+    const features = capa.getSource().getFeatures();
+
+    const valoresUnicos = campo => [...new Set(features.map(f => f.get(campo)).filter(Boolean))];
+
+    llenarSelect("filtroRadica", valoresUnicos("RADICA EL"), val => {
+        valorRadica = val;
+        aplicarFiltro();
+    }, true);
+
+    llenarSelect("filtroNombrel", valoresUnicos("NOMBRE DEL"), val => {
+        valorNombrel = val;
+        aplicarFiltro();
+    }, true);
+
+    llenarSelect("filtroServicios", valoresUnicos("SERVICIOS"), val => {
+        valorServicios = val;
+        aplicarFiltro();
+    }, true);
+
+    // Búsqueda rápida por nombre
+    document.getElementById("busquedaNombre").addEventListener("input", function () {
+        const filtro = normalizar(this.value);
+        const select = document.getElementById("filtroNombrel");
+        const opciones = select.options;
+        for (let i = 0; i < opciones.length; i++) {
+            const texto = normalizar(opciones[i].textContent);
+            opciones[i].style.display = texto.includes(filtro) ? "" : "none";
+        }
+    });
+});
+</script>
+<script>
+function toggleFiltros() {
+  const filtros = document.getElementById("filtros");
+  const btn = document.getElementById("toggleBtn");
+  if (filtros.style.display === "none") {
+    filtros.style.display = "block";
+    btn.textContent = "Ocultar filtros";
+  } else {
+    filtros.style.display = "none";
+    btn.textContent = "Mostrar filtros";
+  }
+}
+</script>
+
+
+    </body>
+</html>
